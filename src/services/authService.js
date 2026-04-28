@@ -1,15 +1,23 @@
-const jwt      = require('jsonwebtoken');
-const bcrypt   = require('bcryptjs');
+const jwt    = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
 const USERNAME      = process.env.ADMIN_USERNAME      || 'admin';
 const PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || '';
+const PLAIN_PASS    = process.env.ADMIN_PASSWORD      || '';
 const JWT_SECRET    = process.env.JWT_SECRET          || 'changeme';
 const JWT_EXPIRES   = process.env.JWT_EXPIRES_IN      || '7d';
 const COOKIE_NAME   = process.env.COOKIE_NAME         || 'tracker_session';
 
 async function verifyCredentials(username, password) {
   if (username !== USERNAME) return false;
+
+  // If plain password is set in env use direct comparison
+  if (PLAIN_PASS) {
+    return password === PLAIN_PASS;
+  }
+
+  // Otherwise use bcrypt hash comparison
   return bcrypt.compare(password, PASSWORD_HASH);
 }
 
