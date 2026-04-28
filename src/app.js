@@ -64,15 +64,7 @@ app.get('/login', redirectIfLoggedIn, (req, res) => {
   res.sendFile(path.join(__dirname, '../public/login.html'));
 });
 app.get('/dashboard', requireAuthPage, (req, res) => {
-  res.send(`
-    <html>
-      <body style="background:#0f1117;color:#e2e8f0;font-family:sans-serif;padding:40px;">
-        <h1 style="color:#a78bfa">Dashboard coming soon</h1>
-        <p>You are logged in. Full dashboard coming next.</p>
-        <a href="/auth/logout" style="color:#a78bfa">Logout</a>
-      </body>
-    </html>
-  `);
+  res.sendFile(path.join(__dirname, '../public/dashboard.html'));
 });
 
 // Protected API routes

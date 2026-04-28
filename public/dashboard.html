@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Affiliate Tracker — Dashboard</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      position: fixed;
+      left: 0; top: 0;
+      width: 220px;
+      height: 100vh;
+      background: #1a1d2e;
+      border-right: 1px solid #2d3148;
+      padding: 24px 0;
+      z-index: 100;
+    }
+
+    .sidebar-logo {
+      padding: 0 20px 24px;
+      border-bottom: 1px solid #2d3148;
+    }
+
+    .sidebar-logo h1 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #a78bfa;
+    }
+
+    .sidebar-logo p {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+
+    .nav {
+      padding: 16px 0;
+    }
+
+    .nav a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 20px;
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 13px;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+
+    .nav a:hover, .nav a.active {
+      color: #a78bfa;
+      background: #1e2040;
+    }
+
+    .nav a .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      flex-shrink: 0;
+    }
+
+    .sidebar-footer {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      padding: 16px 20px;
+      border-top: 1px solid #2d3148;
+    }
+
+    .sidebar-footer a {
+      color: #64748b;
+      text-decoration: none;
+      font-size: 12px;
+      display: block;
+      transition: color 0.2s;
+    }
+
+    .sidebar-footer a:hover { color: #e2e8f0; }
+
+    /* Main content */
+    .main {
+      margin-left: 220px;
+      padding: 32px;
+      min-height: 100vh;
+    }
+
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* Page header */
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+    }
+
+    .page-header h2 {
+      font-size: 20px;
+      font-weight: 600;
+      color: #e2e8f0;
+    }
+
+    .page-header p {
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+
+    /* Stat cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      background: #1a1d2e;
+      border: 1px solid #2d3148;
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .stat-card .label {
+      font-size: 12px;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .stat-card .value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #e2e8f0;
+      margin: 8px 0 4px;
+    }
+
+    .stat-card .sub {
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    .stat-card.purple .value { color: #a78bfa; }
+    .stat-card.green  .value { color: #34d399; }
+    .stat-card.blue   .value { color: #60a5fa; }
+    .stat-card.amber  .value { color: #fbbf24; }
+
+    /* Charts grid */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .chart-card {
+      background: #1a1d2e;
+      border: 1px solid #2d3148;
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .chart-card h3 {
+      font-size: 14px;
+      font-weight: 500;
+      color: #94a3b8;
+      margin-bottom: 16px;
+    }
+
+    .chart-card canvas {
+      max-height: 220px;
+    }
+
+    /* Tables */
+    .table-card {
+      background: #1a1d2e;
+      border: 1px solid #2d3148;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .table-card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #2d3148;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .table-card-header h3 {
+      font-size: 14px;
+      font-weight: 500;
+      color: #e2e8f0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th {
+      padding: 10px 20px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 500;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      background: #151828;
+      border-bottom: 1px solid #2d3148;
+    }
+
+    td {
+      padding: 12px 20px;
+      font-size: 13px;
+      color: #e2e8f0;
+      border-bottom: 1px solid #1e2234;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #1e2040; }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .badge-green  { background: #064e3b; color: #34d399; }
+    .badge-purple { background: #2e1065; color: #a78bfa; }
+    .badge-blue   { background: #1e3a5f; color: #60a5fa; }
+    .badge-amber  { background: #451a03; color: #fbbf24; }
+
+    /* Buttons */
+    .btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-primary {
+      background: #7c3aed;
+      color: white;
+    }
+
+    .btn-primary:hover { background: #6d28d9; }
+
+    .btn-outline {
+      background: transparent;
+      color: #94a3b8;
+      border: 1px solid #2d3148;
+    }
+
+    .btn-outline:hover {
+      color: #e2e8f0;
+      border-color: #4a5180;
+    }
+
+    .btn-green {
+      background: #065f46;
+      color: #34d399;
+    }
+
+    .btn-green:hover { background: #064e3b; }
+
+    /* Date filter */
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .filter-bar input {
+      padding: 7px 12px;
+      background: #1a1d2e;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      color: #e2e8f0;
+      font-size: 13px;
+      outline: none;
+    }
+
+    .filter-bar input:focus { border-color: #a78bfa; }
+
+    .filter-bar label {
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    /* Loading */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #64748b;
+      font-size: 13px;
+    }
+
+    /* Empty state */
+    .empty {
+      text-align: center;
+      padding: 40px;
+      color: #64748b;
+      font-size: 13px;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .charts-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <h1>Affiliate Tracker</h1>
+    <p>Performance Dashboard</p>
+  </div>
+  <nav class="nav">
+    <a onclick="showPage('overview')" class="active" id="nav-overview">
+      <span class="dot"></span> Overview
+    </a>
+    <a onclick="showPage('campaigns')" id="nav-campaigns">
+      <span class="dot"></span> Campaigns
+    </a>
+    <a onclick="showPage('keywords')" id="nav-keywords">
+      <span class="dot"></span> Keywords
+    </a>
+    <a onclick="showPage('export')" id="nav-export">
+      <span class="dot"></span> CSV Export
+    </a>
+  </nav>
+  <div class="sidebar-footer">
+    <a href="/auth/logout">Sign out</a>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main">
+
+  <!-- Overview Page -->
+  <div class="page active" id="page-overview">
+    <div class="page-header">
+      <div>
+        <h2>Overview</h2>
+        <p>All time performance across all campaigns</p>
+      </div>
+      <button class="btn btn-outline" onclick="loadOverview()">Refresh</button>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card purple">
+        <div class="label">Total Clicks</div>
+        <div class="value" id="stat-clicks">—</div>
+        <div class="sub">All campaigns</div>
+      </div>
+      <div class="stat-card green">
+        <div class="label">Conversions</div>
+        <div class="value" id="stat-conversions">—</div>
+        <div class="sub">Unique postbacks</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="label">Total Revenue</div>
+        <div class="value" id="stat-revenue">—</div>
+        <div class="sub">USD</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="label">Avg CVR</div>
+        <div class="value" id="stat-cvr">—</div>
+        <div class="sub">Conversion rate</div>
+      </div>
+    </div>
+
+    <div class="charts-grid">
+      <div class="chart-card">
+        <h3>Revenue by campaign</h3>
+        <canvas id="chart-revenue"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>Clicks vs conversions</h3>
+        <canvas id="chart-clicks"></canvas>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-card-header">
+        <h3>Campaign performance</h3>
+      </div>
+      <div id="overview-table"><div class="loading">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- Campaigns Page -->
+  <div class="page" id="page-campaigns">
+    <div class="page-header">
+      <div>
+        <h2>Campaigns</h2>
+        <p>All campaigns with performance data</p>
+      </div>
+      <button class="btn btn-outline" onclick="loadCampaigns()">Refresh</button>
+    </div>
+
+    <div class="filter-bar">
+      <label>From</label>
+      <input type="date" id="camp-from">
+      <label>To</label>
+      <input type="date" id="camp-to">
+      <button class="btn btn-primary" onclick="loadCampaigns()">Filter</button>
+      <button class="btn btn-outline" onclick="clearFilter('camp')">Clear</button>
+    </div>
+
+    <div class="table-card">
+      <div id="campaigns-table"><div class="loading">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- Keywords Page -->
+  <div class="page" id="page-keywords">
+    <div class="page-header">
+      <div>
+        <h2>Keywords</h2>
+        <p>Keyword performance by clicks and revenue</p>
+      </div>
+      <button class="btn btn-outline" onclick="loadKeywords()">Refresh</button>
+    </div>
+
+    <div class="filter-bar">
+      <label>From</label>
+      <input type="date" id="kw-from">
+      <label>To</label>
+      <input type="date" id="kw-to">
+      <button class="btn btn-primary" onclick="loadKeywords()">Filter</button>
+      <button class="btn btn-outline" onclick="clearFilter('kw')">Clear</button>
+    </div>
+
+    <div class="table-card">
+      <div id="keywords-table"><div class="loading">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- Export Page -->
+  <div class="page" id="page-export">
+    <div class="page-header">
+      <div>
+        <h2>CSV Export</h2>
+        <p>Download Google Ads conversion data</p>
+      </div>
+    </div>
+
+    <div class="table-card" style="padding: 32px;">
+      <h3 style="font-size:15px;margin-bottom:8px;">Google Ads Conversions CSV</h3>
+      <p style="font-size:13px;color:#64748b;margin-bottom:24px;">
+        Downloads conversions in the exact format required by Google Ads.
+        Only includes rows where a Google Click ID (gclid) exists.
+      </p>
+
+      <div class="filter-bar" style="margin-bottom:24px;">
+        <label>From</label>
+        <input type="date" id="export-from">
+        <label>To</label>
+        <input type="date" id="export-to">
+      </div>
+
+      <button class="btn btn-green" onclick="downloadCsv()" style="font-size:14px;padding:10px 24px;">
+        Download CSV
+      </button>
+
+      <div id="export-msg" style="margin-top:16px;font-size:13px;color:#64748b;"></div>
+
+      <div style="margin-top:32px;padding-top:24px;border-top:1px solid #2d3148;">
+        <p style="font-size:12px;color:#64748b;margin-bottom:8px;">CSV Format:</p>
+        <code style="font-size:12px;color:#94a3b8;background:#0f1117;padding:12px;border-radius:6px;display:block;">
+          Google Click ID, Conversion Name, Conversion Time, Conversion Value, Currency<br>
+          Cj0KCQiA..., Purchase, 2026-04-28 08:26:09, 19.99, USD
+        </code>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ── Navigation ──────────────────────────────────────────
+  function showPage(name) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav a').forEach(a => a.classList.remove('active'));
+    document.getElementById('page-' + name).classList.add('active');
+    document.getElementById('nav-' + name).classList.add('active');
+
+    if (name === 'overview')  loadOverview();
+    if (name === 'campaigns') loadCampaigns();
+    if (name === 'keywords')  loadKeywords();
+  }
+
+  // ── API helper ───────────────────────────────────────────
+  async function api(url) {
+    const res = await fetch(url);
+    if (res.status === 401) {
+      window.location.href = '/login';
+      return null;
+    }
+    return res.json();
+  }
+
+  // ── Format helpers ───────────────────────────────────────
+  function fmt(n)   { return Number(n).toLocaleString(); }
+  function money(n) { return '$' + Number(n).toFixed(2); }
+  function pct(n)   { return Number(n).toFixed(2) + '%'; }
+
+  function cvrBadge(cvr) {
+    const n = Number(cvr);
+    if (n >= 10) return `<span class="badge badge-green">${pct(n)}</span>`;
+    if (n >= 5)  return `<span class="badge badge-blue">${pct(n)}</span>`;
+    if (n >= 1)  return `<span class="badge badge-amber">${pct(n)}</span>`;
+    return `<span class="badge badge-purple">${pct(n)}</span>`;
+  }
+
+  // ── Overview ─────────────────────────────────────────────
+  let revenueChart = null;
+  let clicksChart  = null;
+
+  async function loadOverview() {
+    const data = await api('/reports/campaigns?limit=100');
+    if (!data) return;
+
+    const rows = data.data || [];
+
+    // Stat cards
+    const totalClicks       = rows.reduce((s, r) => s + Number(r.clicks), 0);
+    const totalConversions  = rows.reduce((s, r) => s + Number(r.conversions), 0);
+    const totalRevenue      = rows.reduce((s, r) => s + Number(r.revenue), 0);
+    const avgCvr            = totalClicks > 0
+      ? (totalConversions / totalClicks * 100).toFixed(2)
+      : 0;
+
+    document.getElementById('stat-clicks').textContent       = fmt(totalClicks);
+    document.getElementById('stat-conversions').textContent  = fmt(totalConversions);
+    document.getElementById('stat-revenue').textContent      = money(totalRevenue);
+    document.getElementById('stat-cvr').textContent          = pct(avgCvr);
+
+    // Charts
+    const labels   = rows.map(r => r.campaign_name);
+    const revenues = rows.map(r => Number(r.revenue));
+    const clicks   = rows.map(r => Number(r.clicks));
+    const convs    = rows.map(r => Number(r.conversions));
+
+    if (revenueChart) revenueChart.destroy();
+    if (clicksChart)  clicksChart.destroy();
+
+    revenueChart = new Chart(document.getElementById('chart-revenue'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Revenue ($)',
+          data: revenues,
+          backgroundColor: '#7c3aed',
+          borderRadius: 6,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: '#64748b' }, grid: { color: '#1e2234' } },
+          y: { ticks: { color: '#64748b' }, grid: { color: '#1e2234' } },
+        }
+      }
+    });
+
+    clicksChart = new Chart(document.getElementById('chart-clicks'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Clicks',
+            data: clicks,
+            backgroundColor: '#3b82f6',
+            borderRadius: 6,
+          },
+          {
+            label: 'Conversions',
+            data: convs,
+            backgroundColor: '#34d399',
+            borderRadius: 6,
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { labels: { color: '#94a3b8', font: { size: 12 } } } },
+        scales: {
+          x: { ticks: { color: '#64748b' }, grid: { color: '#1e2234' } },
+          y: { ticks: { color: '#64748b' }, grid: { color: '#1e2234' } },
+        }
+      }
+    });
+
+    // Table
+    if (rows.length === 0) {
+      document.getElementById('overview-table').innerHTML =
+        '<div class="empty">No campaign data yet.</div>';
+      return;
+    }
+
+    document.getElementById('overview-table').innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>Campaign</th>
+            <th>Country</th>
+            <th>Clicks</th>
+            <th>Conversions</th>
+            <th>Revenue</th>
+            <th>CVR</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(r => `
+            <tr>
+              <td>${r.campaign_name}</td>
+              <td>${r.country || '—'}</td>
+              <td>${fmt(r.clicks)}</td>
+              <td>${fmt(r.conversions)}</td>
+              <td>${money(r.revenue)}</td>
+              <td>${cvrBadge(r.cvr_percent)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  }
+
+  // ── Campaigns ────────────────────────────────────────────
+  async function loadCampaigns() {
+    document.getElementById('campaigns-table').innerHTML =
+      '<div class="loading">Loading...</div>';
+
+    const from = document.getElementById('camp-from').value;
+    const to   = document.getElementById('camp-to').value;
+    let url    = '/reports/campaigns?limit=100';
+    if (from) url += `&from=${from}`;
+    if (to)   url += `&to=${to}`;
+
+    const data = await api(url);
+    if (!data) return;
+
+    const rows = data.data || [];
+
+    if (rows.length === 0) {
+      document.getElementById('campaigns-table').innerHTML =
+        '<div class="empty">No campaigns found for this date range.</div>';
+      return;
+    }
+
+    document.getElementById('campaigns-table').innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>Campaign</th>
+            <th>Country</th>
+            <th>Clicks</th>
+            <th>Conversions</th>
+            <th>Revenue</th>
+            <th>CVR</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(r => `
+            <tr>
+              <td>${r.campaign_name}</td>
+              <td>${r.country || '—'}</td>
+              <td>${fmt(r.clicks)}</td>
+              <td>${fmt(r.conversions)}</td>
+              <td>${money(r.revenue)}</td>
+              <td>${cvrBadge(r.cvr_percent)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  }
+
+  // ── Keywords ─────────────────────────────────────────────
+  async function loadKeywords() {
+    document.getElementById('keywords-table').innerHTML =
+      '<div class="loading">Loading...</div>';
+
+    const from = document.getElementById('kw-from').value;
+    const to   = document.getElementById('kw-to').value;
+    let url    = '/reports/keywords?limit=100';
+    if (from) url += `&from=${from}`;
+    if (to)   url += `&to=${to}`;
+
+    const data = await api(url);
+    if (!data) return;
+
+    const rows = data.data || [];
+
+    if (rows.length === 0) {
+      document.getElementById('keywords-table').innerHTML =
+        '<div class="empty">No keyword data found.</div>';
+      return;
+    }
+
+    document.getElementById('keywords-table').innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>Keyword</th>
+            <th>Clicks</th>
+            <th>Conversions</th>
+            <th>Revenue</th>
+            <th>CVR</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(r => `
+            <tr>
+              <td>${r.keyword_id || '<span style="color:#64748b">— no keyword</span>'}</td>
+              <td>${fmt(r.clicks)}</td>
+              <td>${fmt(r.conversions)}</td>
+              <td>${money(r.revenue)}</td>
+              <td>${cvrBadge(
+                r.clicks > 0
+                  ? (Number(r.conversions) / Number(r.clicks) * 100)
+                  : 0
+              )}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  }
+
+  // ── CSV Export ───────────────────────────────────────────
+  async function downloadCsv() {
+    const from = document.getElementById('export-from').value;
+    const to   = document.getElementById('export-to').value;
+    const msg  = document.getElementById('export-msg');
+
+    let url = '/export/google-ads-csv';
+    if (from) url += `?from=${from}`;
+    if (to)   url += `${from ? '&' : '?'}to=${to}`;
+
+    msg.textContent = 'Downloading...';
+
+    try {
+      const res = await fetch(url);
+
+      if (res.status === 404) {
+        msg.textContent = 'No conversions found for this date range.';
+        msg.style.color = '#fca5a5';
+        return;
+      }
+
+      if (!res.ok) {
+        const err = await res.json();
+        msg.textContent = err.error || 'Export failed.';
+        msg.style.color = '#fca5a5';
+        return;
+      }
+
+      // Trigger download
+      const blob     = await res.blob();
+      const blobUrl  = URL.createObjectURL(blob);
+      const a        = document.createElement('a');
+      a.href         = blobUrl;
+      a.download     = `google-ads-conversions-${Date.now()}.csv`;
+      a.click();
+      URL.revokeObjectURL(blobUrl);
+
+      msg.textContent = 'Downloaded successfully.';
+      msg.style.color = '#34d399';
+
+    } catch {
+      msg.textContent = 'Network error. Please try again.';
+      msg.style.color = '#fca5a5';
+    }
+  }
+
+  // ── Clear filters ────────────────────────────────────────
+  function clearFilter(prefix) {
+    document.getElementById(prefix + '-from').value = '';
+    document.getElementById(prefix + '-to').value   = '';
+    if (prefix === 'camp') loadCampaigns();
+    if (prefix === 'kw')   loadKeywords();
+  }
+
+  // ── Init ─────────────────────────────────────────────────
+  loadOverview();
+</script>
+</body>
+</html>
