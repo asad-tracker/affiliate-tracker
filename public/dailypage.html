@@ -1,0 +1,69 @@
+<!-- Daily Report Page -->
+<div class="page" id="page-daily">
+  <div class="page-header">
+    <div>
+      <h2>Daily Report</h2>
+      <p>Day by day breakdown — leads, earnings, sales value, sales count</p>
+    </div>
+    <button class="btn btn-outline" onclick="loadDaily()">Refresh</button>
+  </div>
+
+  <div class="filter-bar">
+    <label>From</label>
+    <input type="date" id="daily-from">
+    <label>To</label>
+    <input type="date" id="daily-to">
+    <button class="btn btn-primary" onclick="loadDaily()">Filter</button>
+    <button class="btn btn-outline" onclick="clearFilter('daily')">Clear</button>
+  </div>
+
+  <div class="table-card">
+    <div id="daily-table"><div class="loading">Loading...</div></div>
+  </div>
+</div>
+async function loadDaily() {
+  document.getElementById('daily-table').innerHTML =
+    '<div class="loading">Loading...</div>';
+
+  const from = document.getElementById('daily-from').value;
+  const to   = document.getElementById('daily-to').value;
+  let url    = '/reports/daily?limit=100';
+  if (from) url += `&from=${from}`;
+  if (to)   url += `&to=${to}`;
+
+  const data = await api(url);
+  if (!data) return;
+
+  const rows = data.data || [];
+
+  if (rows.length === 0) {
+    document.getElementById('daily-table').innerHTML =
+      '<div class="empty">No data found for this date range.</div>';
+    return;
+  }
+
+  document.getElementById('daily-table').innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Day</th>
+          <th>Leads</th>
+          <th>Your Earnings</th>
+          <th>Sales Value</th>
+          <th>Sales Count</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map(r => `
+          <tr>
+            <td>${r.day}</td>
+            <td>${fmt(r.leads)}</td>
+            <td>${money(r.your_earnings)}</td>
+            <td>${money(r.sales_value)}</td>
+            <td><span class="badge badge-green">${fmt(r.sales_count)}</span></td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}

@@ -69,5 +69,24 @@ async function campaigns(req, res, next) {
     });
   } catch (err) { next(err); }
 }
+async function daily(req, res, next) {
+  try {
+    const dates = parseDateRange(req.query);
+    if (dates.error) return res.status(400).json({ error: dates.error });
 
-module.exports = { keywords, campaigns };
+    const { limit, offset } = safePagination(req.query);
+    const data = await svc.dailyReport({
+      from: dates.from,
+      to:   dates.to,
+      limit,
+      offset,
+    });
+
+    res.json({
+      meta: { from: dates.from, to: dates.to, limit, offset, count: data.length },
+      data,
+    });
+  } catch (err) { next(err); }
+}
+
+module.exports = { keywords, campaigns, daily };

@@ -41,4 +41,4 @@ module.exports = {
   isValidPayout,
   isValidDate,
   isValidDateRange,
-};
+};  

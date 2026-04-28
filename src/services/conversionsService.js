@@ -9,30 +9,23 @@ async function isDuplicate(click_id) {
   return rows.length > 0;
 }
 
-async function storeConversion({ click_id, payout }) {
+async function storeConversion({ click_id, payout, sale_value }) {
   const { rows } = await db.query(
-    `INSERT INTO conversions (click_id, payout)
-     VALUES ($1, $2) RETURNING *`,
-    [click_id, parseFloat(payout) || 0]
+    `INSERT INTO conversions (click_id, payout, sale_value)
+     VALUES ($1, $2, $3) RETURNING *`,
+    [click_id, parseFloat(payout) || 0, parseFloat(sale_value) || 0]
   );
   return rows[0];
 }
 
-async function processPostback({ click_id, payout }) {
-  // 1. Validate click exists
+async function processPostback({ click_id, payout, sale_value }) {
   const click = await getClickById(click_id);
-  if (!click) {
-    return { ok: false, reason: 'click_not_found' };
-  }
+  if (!click) return { ok: false, reason: 'click_not_found' };
 
-  // 2. Prevent duplicate conversions
   const dup = await isDuplicate(click_id);
-  if (dup) {
-    return { ok: false, reason: 'duplicate' };
-  }
+  if (dup) return { ok: false, reason: 'duplicate' };
 
-  // 3. Store conversion
-  const conversion = await storeConversion({ click_id, payout });
+  const conversion = await storeConversion({ click_id, payout, sale_value });
   return { ok: true, conversion };
 }
 
